@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+  
+// =====================================
+// SEGURIDAD Y ACCESO
+// =====================================
+
+model Rol {
+  id_rol      Int       @id @default(autoincrement())
+  nombre_rol  String    @db.VarChar(50)
+  descripcion String?   @db.VarChar(255)
+  usuarios    Usuario[]
+
+  @@map("roles")
+}
+
+model Usuario {
+  id_usuario      Int                     @id @default(autoincrement())
+  nombre_completo String                  @db.VarChar(150)
+  email           String                  @unique @db.VarChar(150)
+  password_hash   String                  @db.VarChar(255)
+  id_rol          Int
+  estado          String                  @default("Activo") @db.VarChar(20)
+  rol             Rol                     @relation(fields: [id_rol], references: [id_rol])
+  movimientos     MovimientoInventario[]
+  notas_venta     NotaVenta[]
+
+  @@map("usuarios")
+}
+
+// =====================================
+// CATÁLOGOS PRINCIPALES
+// =====================================
+
+model Cliente {
+  id_cliente  Int         @id @default(autoincrement())
+  nombre      String      @db.VarChar(150)
+  rfc         String?     @db.VarChar(20)
+  telefono    String?     @db.VarChar(20)
+  email       String?     @db.VarChar(150)
+  notas_venta NotaVenta[]
+
+  @@map("clientes")
+}
+
+model Proveedor {
+  id_proveedor    Int                    @id @default(autoincrement())
+  nombre_empresa  String                 @db.VarChar(150)
+  contacto        String?                @db.VarChar(100)
+  telefono        String?                @db.VarChar(20)
+  email           String?                @db.VarChar(150)
+  movimientos     MovimientoInventario[]
+
+  @@map("proveedores")
+}
+
+model Almacen {
+  id_almacen          Int                    @id @default(autoincrement())
+  nombre              String                 @db.VarChar(100)
+  direccion           String?                @db.VarChar(255)
+  estado              String                 @default("Activo") @db.VarChar(20)
+  inventario          InventarioAlmacen[]
+  movimientos         MovimientoInventario[]
+  detalle_notas_venta DetalleNotaVenta[]
+
+  @@map("almacenes")
+}
+
+model UnidadMedida {
+  id_unidad            Int        @id @default(autoincrement())
+  nombre_presentacion  String     @db.VarChar(100)
+  abreviatura          String     @db.VarChar(20)
+  productos            Producto[]
+
+  @@map("unidades_medida")
+}
+
+model Producto {
+  id_producto         Int                    @id @default(autoincrement())
+  nombre              String                 @db.VarChar(150)
+  descripcion         String?                @db.Text
+  id_unidad           Int
+  precio_unitario     Decimal                @db.Decimal(10, 2)
+  costo               Decimal                @db.Decimal(10, 2)
+  unidad              UnidadMedida           @relation(fields: [id_unidad], references: [id_unidad])
+  inventario          InventarioAlmacen[]
+  movimientos         MovimientoInventario[]
+  detalle_notas_venta DetalleNotaVenta[]
+
+  @@map("productos")
+}
+
+// =====================================
+// INVENTARIO Y MOVIMIENTOS
+// =====================================
+
+model InventarioAlmacen {
+  id_inventario       Int      @id @default(autoincrement())
+  id_producto         Int
+  id_almacen          Int
+  cantidad_disponible Int      @default(0)
+  producto            Producto @relation(fields: [id_producto], references: [id_producto])
+  almacen             Almacen  @relation(fields: [id_almacen], references: [id_almacen])
+
+  @@unique([id_producto, id_almacen])
+  @@map("inventario_almacen")
+}
+
+model MovimientoInventario {
+  id_movimiento    Int       @id @default(autoincrement())
+  id_producto      Int
+  id_almacen       Int
+  id_proveedor     Int?
+  id_usuario       Int
+  tipo_movimiento  String    @db.VarChar(20)
+  cantidad         Int
+  fecha_movimiento DateTime  @default(now())
+  referencia       String?   @db.VarChar(100)
+  producto         Producto  @relation(fields: [id_producto], references: [id_producto])
+  almacen          Almacen   @relation(fields: [id_almacen], references: [id_almacen])
+  proveedor        Proveedor? @relation(fields: [id_proveedor], references: [id_proveedor])
+  usuario          Usuario   @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("movimientos_inventario")
+}
+
+// =====================================
+// VENTAS Y FACTURACIÓN
+// =====================================
+
+model NotaVenta {
+  id_nota_venta Int                @id @default(autoincrement())
+  fecha_venta   DateTime           @default(now())
+  id_cliente    Int
+  id_usuario    Int
+  total         Decimal            @db.Decimal(10, 2)
+  estatus       String             @default("Pendiente") @db.VarChar(20)
+  cliente       Cliente            @relation(fields: [id_cliente], references: [id_cliente])
+  usuario       Usuario            @relation(fields: [id_usuario], references: [id_usuario])
+  detalles      DetalleNotaVenta[]
+  factura       Factura?
+
+  @@map("notas_venta")
+}
+
+model DetalleNotaVenta {
+  id_detalle_nota Int       @id @default(autoincrement())
+  id_nota_venta   Int
+  id_producto     Int
+  id_almacen      Int
+  cantidad        Int
+  precio_vendido  Decimal   @db.Decimal(10, 2)
+  nota_venta      NotaVenta @relation(fields: [id_nota_venta], references: [id_nota_venta])
+  producto        Producto  @relation(fields: [id_producto], references: [id_producto])
+  almacen         Almacen   @relation(fields: [id_almacen], references: [id_almacen])
+
+  @@map("detalle_notas_venta")
+}
+
+model Factura {
+  id_factura        Int       @id @default(autoincrement())
+  id_nota_venta     Int       @unique
+  fecha_facturacion DateTime  @default(now())
+  rfc_cliente       String    @db.VarChar(20)
+  subtotal          Decimal   @db.Decimal(10, 2)
+  impuestos         Decimal   @db.Decimal(10, 2)
+  total             Decimal   @db.Decimal(10, 2)
+  nota_venta        NotaVenta @relation(fields: [id_nota_venta], references: [id_nota_venta])
+
+  @@map("facturas")
+}
