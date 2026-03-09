@@ -1,25 +1,68 @@
-# Dependencias
+# =====================================
+# DEPENDENCIAS
+# =====================================
 node_modules/
 
-# Variables de entorno (NUNCA subir al repo)
+# =====================================
+# VARIABLES DE ENTORNO
+# =====================================
 .env
 .env.local
 .env.production
 
-# Logs
-*.log
-npm-debug.log*
-
-# Build
+# =====================================
+# BUILD / DIST
+# =====================================
 dist/
+dist-ssr/
 build/
 
-# Docker volumes
+# =====================================
+# LOGS
+# =====================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# =====================================
+# PRISMA
+# =====================================
+/backend/src/generated/prisma
+
+# =====================================
+# DOCKER
+# =====================================
 postgres_data/
 
-# VS Code
-.vscode/settings.json
+# =====================================
+# VS CODE
+# =====================================
+.vscode/*
+!.vscode/extensions.json
 
-# Windows
+# =====================================
+# EDITORES / IDEs
+# =====================================
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# =====================================
+# WINDOWS
+# =====================================
 Thumbs.db
 desktop.ini
+Desktop.ini
+
+# =====================================
+# MACOS
+# =====================================
+.DS_Store
+*.local
