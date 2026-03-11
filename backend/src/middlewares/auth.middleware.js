@@ -1,12 +1,12 @@
 const jwt = require('jsonwebtoken')
 
-// Verifica que el request tenga un JWT válido
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization']
+  console.log('Auth header recibido:', authHeader)
   const token = authHeader && authHeader.split(' ')[1] // Bearer <token>
 
   if (!token) {
-    return res.status(401).json({ message: 'Token requerido' })
+    return res.status(401).json({ message: 'Acceso denegado, token requerido' })
   }
 
   try {
@@ -14,21 +14,18 @@ const verifyToken = (req, res, next) => {
     req.user = decoded
     next()
   } catch (error) {
-    return res.status(401).json({ message: 'Token inválido o expirado' })
+    return res.status(403).json({ message: 'Token inválido o expirado' })
   }
 }
 
-// Verifica que el usuario tenga el rol requerido
-const verifyRole = (...rolesPermitidos) => {
+const verifyRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'No autenticado' })
     }
-
-    if (!rolesPermitidos.includes(req.user.rol)) {
+    if (!roles.includes(req.user.nombre_rol)) {
       return res.status(403).json({ message: 'No tienes permisos para esta acción' })
     }
-
     next()
   }
 }
